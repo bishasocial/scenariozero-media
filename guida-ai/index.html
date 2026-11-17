@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guida AI e produttività · SCENARIO ZERO</title>
+<meta name="description" content="Best practice per usare l'intelligenza artificiale nel lavoro di ogni giorno, con un focus su come configurare Claude Code e OpenAI Codex per lavorare meglio e consumare meno token.">
+<meta property="og:title" content="Guida AI e produttività">
+<meta property="og:description" content="Best practice sull'uso dell'AI e configurazione di Claude Code e Codex per ridurre il consumo di token.">
+<meta property="og:type" content="article">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07080b; --card: #0e1117; --card2: #121620; --ink: #f2f4f7; --soft: #a7afbd; --faint: #6b7383;
+    --accent: #3be8e0; --amber: #f5b85a; --red: #ff7a7a; --line: rgba(242,244,247,0.10);
+    --code-bg: #0a0d12;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+  body {
+    background: radial-gradient(110% 50% at 90% 0%, rgba(59,232,224,0.07), transparent 60%), var(--bg);
+    color: var(--ink); font-family: "Space Grotesk", system-ui, sans-serif; font-size: 17px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-underline-offset: 3px; }
+  code, pre, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+  :not(pre) > code { font-size: .86em; background: rgba(59,232,224,0.08); border: 1px solid rgba(59,232,224,0.15);
+    padding: 1px 6px; border-radius: 6px; color: #d9fbf9; word-break: break-word; }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; display: grid; grid-template-columns: 240px minmax(0, 1fr);
+    gap: 56px; }
+  header.hero { max-width: 1180px; margin: 0 auto; padding: 44px 16px 36px; }
+  .brand { font-family: "JetBrains Mono", monospace; font-weight: 600; letter-spacing: .08em; font-size: 14px; color: var(--ink);
+    text-decoration: none; }
+  .brand .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 14px var(--accent); margin-right: 10px; }
+  .hero h1 { font-size: clamp(34px, 5.4vw, 60px); line-height: 1.04; letter-spacing: -0.03em; margin: 34px 0 18px; max-width: 900px; }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero .lead { color: var(--soft); font-size: clamp(17px, 2vw, 20px); max-width: 720px; }
+  .meta { margin-top: 22px; font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--faint); letter-spacing: .06em; }
+
+  nav.toc { position: sticky; top: 24px; align-self: start; max-height: calc(100vh - 48px); overflow: auto; padding-bottom: 24px; }
+  nav.toc .label { margin-top: 0; }
+  nav.toc ol { list-style: none; counter-reset: t; }
+  nav.toc li { counter-increment: t; }
+  nav.toc a { display: block; color: var(--soft); text-decoration: none; font-size: 14.5px; line-height: 1.35; padding: 7px 0 7px 12px;
+    border-left: 2px solid var(--line); }
+  nav.toc a::before { content: counter(t, decimal-leading-zero) "  "; font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--faint); }
+  nav.toc a:hover { color: var(--ink); }
+  nav.toc a.active { color: var(--ink); border-left-color: var(--accent); }
+
+  main { min-width: 0; padding-bottom: 80px; }
+  section { padding-top: 18px; margin-bottom: 64px; }
+  .label { font-family: "JetBrains Mono", monospace; color: var(--accent); font-size: 12px; letter-spacing: .18em; margin: 0 0 12px; text-transform: uppercase; }
+  h2 { font-size: clamp(27px, 3.4vw, 38px); line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 18px; }
+  h3 { font-size: 21px; line-height: 1.25; margin: 34px 0 10px; letter-spacing: -0.01em; }
+  p { margin: 0 0 14px; max-width: 74ch; }
+  p.soft, .soft { color: var(--soft); }
+  ul.list, ol.list { margin: 0 0 16px 0; padding-left: 20px; max-width: 74ch; }
+  ul.list li, ol.list li { margin-bottom: 8px; }
+  ul.list li::marker { color: var(--accent); }
+  strong { color: #fff; font-weight: 600; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin: 18px 0 8px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 16px; }
+  .card h4 { font-size: 17px; margin-bottom: 6px; }
+  .card p { font-size: 15px; color: var(--soft); margin: 0; }
+  .card .k { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: .14em; color: var(--accent); margin-bottom: 8px; display: block; }
+
+  .callout { border: 1px solid rgba(59,232,224,0.35); background: linear-gradient(180deg, rgba(59,232,224,0.07), rgba(59,232,224,0.02));
+    border-radius: 14px; padding: 16px 18px; margin: 20px 0; max-width: 80ch; }
+  .callout.warn { border-color: rgba(245,184,90,0.4); background: linear-gradient(180deg, rgba(245,184,90,0.08), rgba(245,184,90,0.02)); }
+  .callout .t { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: .16em; color: var(--accent); display: block; margin-bottom: 6px; }
+  .callout.warn .t { color: var(--amber); }
+  .callout p:last-child { margin-bottom: 0; }
+
+  .code { position: relative; margin: 14px 0 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--code-bg); overflow: hidden; }
+  .code .bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line);
+    font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--faint); background: rgba(255,255,255,0.02); }
+  .code button { font: inherit; color: var(--soft); background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; cursor: pointer; }
+  .code button:hover { color: var(--ink); border-color: var(--accent); }
+  .code pre { padding: 14px 16px; overflow-x: auto; font-size: 13.5px; line-height: 1.6; color: #dfe5ee; tab-size: 2; }
+  .code .c { color: #6f7a8c; } .code .s { color: #f5b85a; } .code .key { color: #3be8e0; }
+
+  .tbl { overflow-x: auto; margin: 16px 0 22px; border: 1px solid var(--line); border-radius: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; min-width: 560px; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-family: "JetBrains Mono", monospace; font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent);
+    background: var(--card); font-weight: 500; }
+  tr:last-child td { border-bottom: 0; }
+  td { color: var(--soft); } td strong, td code { color: var(--ink); }
+
+  .steps { counter-reset: s; list-style: none; max-width: 80ch; margin: 10px 0 18px; }
+  .steps li { counter-increment: s; position: relative; padding: 0 0 16px 46px; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%;
+    border: 1px solid rgba(59,232,224,0.5); color: var(--accent); font-family: "JetBrains Mono", monospace; font-size: 13px;
+    display: grid; place-items: center; }
+
+  .check { list-style: none; max-width: 80ch; }
+  .check li { padding: 9px 0 9px 32px; position: relative; border-bottom: 1px solid var(--line); }
+  .check li::before { content: ""; position: absolute; left: 2px; top: 13px; width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--accent); }
+
+  footer.foot { border-top: 1px solid var(--line); padding: 28px 16px 48px; max-width: 1180px; margin: 0 auto; color: var(--faint); font-size: 14px; }
+  footer.foot a { color: var(--soft); }
+
+  .mtoc { display: none; }
+  @media (max-width: 900px) {
+    .wrap { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    nav.toc { display: none; }
+    .mtoc { display: block; margin: 0 0 36px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+    .mtoc summary { cursor: pointer; padding: 14px 16px; font-family: "JetBrains Mono", monospace; font-size: 12px; letter-spacing: .14em; color: var(--accent); }
+    .mtoc ol { padding: 0 16px 14px 36px; }
+    .mtoc li { padding: 4px 0; } .mtoc a { color: var(--soft); text-decoration: none; }
+    body { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <a class="brand" href="../"><span class="dot"></span>SCENARIO ZERO</a>
+  <h1>Lavorare meglio con l'AI, <em>spendendo meno token</em></h1>
+  <p class="lead">Una guida pratica in due parti: prima le abitudini che rendono l'intelligenza artificiale davvero utile nel lavoro di ogni giorno, poi la configurazione di Claude Code e di OpenAI Codex per ottenere risultati migliori con meno contesto sprecato.</p>
+  <p class="meta">AGGIORNATA A NOVEMBRE 2026 · LETTURA 20 MIN</p>
+</header>
+
+<div class="wrap">
+  <nav class="toc" aria-label="Indice">
+    <p class="label">Indice</p>
+    <ol id="toc-list"></ol>
+  </nav>
+
+  <main>
+    <details class="mtoc"><summary>INDICE</summary><ol id="mtoc-list"></ol></details>
+
+    <section id="dove-aiuta" data-toc="Dove l'AI fa risparmiare tempo">
+      <p class="label">Parte 1 · Best practice</p>
+      <h2>Dove l'AI fa davvero risparmiare tempo</h2>
+      <p>Il guadagno di produttività arriva quando affidi al modello il lavoro che ti costa fatica ma è facile da controllare: una prima bozza, una sintesi, una trasformazione da un formato all'altro, codice ripetitivo, una lista di ipotesi da scartare. Diventa un rischio quando gli chiedi di decidere al posto tuo o di fornire fatti che non verificherai.</p>
+      <div class="grid">
+        <div class="card"><span class="k">BUONI CANDIDATI</span><h4>Bozze e riscritture</h4><p>Email, verbali, documentazione, post. Tu dai i punti e il tono, il modello scrive, tu correggi.</p></div>
+        <div class="card"><span class="k">BUONI CANDIDATI</span><h4>Sintesi e confronto</h4><p>Riassunti di documenti lunghi, confronto tra due versioni, estrazione di azioni da una riunione.</p></div>
+        <div class="card"><span class="k">BUONI CANDIDATI</span><h4>Trasformazioni</h4><p>Da appunti a tabella, da CSV a report, da specifica a casi di test, da un linguaggio a un altro.</p></div>
+        <div class="card"><span class="k">CON CAUTELA</span><h4>Fatti, numeri, norme</h4><p>Solo con fonti verificabili allegate o citate. Senza fonti il modello può inventare con sicurezza.</p></div>
+      </div>
+      <p class="soft">Una regola pratica: se controllare il risultato richiede meno tempo che produrlo, l'AI conviene. Se controllarlo costa quanto rifarlo, conviene farlo da sé o spezzare il compito.</p>
+    </section>
+
+    <section id="prompt" data-toc="Scrivere richieste che funzionano">
+      <p class="label">Parte 1 · Best practice</p>
+      <h2>Scrivere richieste che funzionano al primo colpo</h2>
+      <p>La maggior parte delle risposte deludenti nasce da richieste a cui manca il contesto che tu dai per scontato. Ogni giro di correzioni in più costa tempo e, nei tool a consumo, token: l'intera conversazione viene riletta dal modello a ogni messaggio.</p>
+      <h3>Gli elementi di una buona richiesta</h3>
+      <ol class="steps">
+        <li><strong>Obiettivo</strong>: cosa deve esistere alla fine e per chi. "Una mail al cliente che spieghi il ritardo" è meglio di "scrivi una mail".</li>
+        <li><strong>Contesto</strong>: i materiali (testo, file, dati) e le informazioni che il modello non può sapere, come vincoli aziendali o decisioni già prese.</li>
+        <li><strong>Vincoli</strong>: lunghezza, tono, cosa non fare, cosa non toccare.</li>
+        <li><strong>Formato</strong>: tabella, elenco, JSON, testo pronto da incollare. Un esempio dell'output desiderato vale più di una descrizione.</li>
+        <li><strong>Criterio di verifica</strong>: come capirai che il lavoro è fatto bene. Nel codice: quale test deve passare.</li>
+      </ol>
+      <div class="code"><div class="bar"><span>modello di richiesta</span><button type="button">Copia</button></div><pre>Obiettivo: [cosa mi serve e per chi]
+Contesto: [materiale allegato, decisioni già prese, pubblico]
+Vincoli: [lunghezza, tono, cosa evitare]
+Formato: [struttura dell'output, con un esempio se possibile]
+Verifica: [come controllo che sia corretto]
+Se ti manca un'informazione importante, chiedimela prima di procedere.</pre></div>
+      <h3>Tecniche che fanno la differenza</h3>
+      <ul class="list">
+        <li><strong>Prima il piano, poi il lavoro.</strong> Per compiti lunghi chiedi una scaletta o un piano e approvalo prima dell'esecuzione: correggere un piano costa poco, correggere il risultato molto.</li>
+        <li><strong>Un compito per conversazione.</strong> Quando cambi argomento apri una nuova chat. Le conversazioni lunghe peggiorano la qualità e aumentano il costo di ogni risposta.</li>
+        <li><strong>Correggi la richiesta, non la risposta.</strong> Se il primo risultato è lontano dall'obiettivo, è più efficace modificare il messaggio iniziale che accumulare correzioni.</li>
+        <li><strong>Chiedi le fonti e le incertezze.</strong> "Indica cosa non sei sicuro sia corretto" fa emergere i punti da verificare.</li>
+      </ul>
+    </section>
+
+    <section id="abitudini" data-toc="Abitudini e sicurezza">
+      <p class="label">Parte 1 · Best practice</p>
+      <h2>Abitudini, verifica e sicurezza dei dati</h2>
+      <h3>Rendi riusabile quello che funziona</h3>
+      <p>Se ripeti spesso le stesse istruzioni ("rispondi in italiano", "usa il formato della nostra azienda", "niente gergo"), salvale una volta sola: istruzioni personalizzate o progetti nelle app di chat, file <code>CLAUDE.md</code> e <code>AGENTS.md</code> negli strumenti per sviluppatori, una piccola libreria di prompt condivisa con il team. Risparmi tempo e ottieni risultati coerenti.</p>
+      <h3>Verifica sempre in proporzione al rischio</h3>
+      <ul class="list">
+        <li>Testo interno a basso impatto: rilettura veloce.</li>
+        <li>Comunicazioni esterne, numeri, citazioni: controllo puntuale sulle fonti originali.</li>
+        <li>Codice: test automatici, revisione del diff, mai merge "a fiducia".</li>
+        <li>Decisioni legali, mediche, finanziarie o sul personale: l'AI prepara il materiale, decide una persona competente.</li>
+      </ul>
+      <div class="callout warn"><span class="t">DATI SENSIBILI</span>
+        <p>Non incollare in strumenti non approvati dall'azienda dati personali di clienti o colleghi, credenziali, chiavi API, contratti riservati o codice proprietario. Usa gli account aziendali con le garanzie contrattuali previste e, nei tool per sviluppatori, impedisci la lettura di file come <code>.env</code> e cartelle di segreti (vedi le configurazioni più avanti).</p>
+      </div>
+      <h3>Misura il risultato</h3>
+      <p>Per qualche settimana annota quanto tempo impieghi su un'attività ricorrente con e senza AI, e quante volte hai dovuto rifare il lavoro. È il modo più onesto per capire dove l'AI ti aiuta davvero e dove ti fa solo sentire più veloce.</p>
+    </section>
+
+    <section id="token" data-toc="Come si consumano i token">
+      <p class="label">Parte 2 · Agenti di programmazione</p>
+      <h2>Come si consumano i token, in breve</h2>
+      <p>Claude Code e Codex sono agenti: leggono file, eseguono comandi e iterano fino a completare il compito. Ogni passaggio rimanda al modello tutto il contesto accumulato fino a quel momento. Per questo il costo non cresce in modo lineare con la lunghezza della sessione: i messaggi più tardi costano più dei primi.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>Cosa occupa il contesto</th><th>Perché pesa</th><th>Come ridurlo</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Istruzioni di sistema e file di memoria</strong></td><td>Caricate a ogni richiesta, per tutta la sessione.</td><td><code>CLAUDE.md</code> e <code>AGENTS.md</code> brevi e mirati.</td></tr>
+          <tr><td><strong>Definizioni degli strumenti MCP</strong></td><td>Ogni server collegato aggiunge descrizioni dei suoi strumenti.</td><td>Attiva solo i server che usi in quel progetto.</td></tr>
+          <tr><td><strong>File letti e output dei comandi</strong></td><td>Log, lockfile, build e test verbosi riempiono il contesto in fretta.</td><td>Escludi cartelle pesanti, limita l'output, indica i file giusti.</td></tr>
+          <tr><td><strong>Storia della conversazione</strong></td><td>Ogni tentativo fallito resta nel contesto.</td><td>Nuova sessione per ogni compito, compattazione quando serve.</td></tr>
+          <tr><td><strong>Ragionamento del modello</strong></td><td>I token di "pensiero" si pagano come output.</td><td>Livello di ragionamento adeguato al compito, non sempre il massimo.</td></tr>
+        </tbody>
+      </table></div>
+      <p class="soft">La cache dei prompt abbassa molto il costo della parte di contesto che resta identica tra una richiesta e l'altra. Cambiare a metà sessione modello, strumenti o file di memoria la invalida: conviene decidere la configurazione prima di iniziare.</p>
+    </section>
+
+    <section id="claude-code" data-toc="Claude Code: configurazione">
+      <p class="label">Parte 2 · Claude Code</p>
+      <h2>Claude Code: configurazione per lavorare meglio e spendere meno</h2>
+      <p>Claude Code è l'agente di Anthropic che lavora nel terminale, nell'IDE e nell'app desktop. Le leve principali sono quattro: un file di memoria compatto, il modello e il livello di ragionamento giusti, un contesto pulito tra un compito e l'altro, e la delega delle attività rumorose a subagent e skill.</p>
+
+      <h3>1. CLAUDE.md: corto, specifico, stratificato</h3>
+      <p>Il file <code>CLAUDE.md</code> viene caricato all'avvio di ogni sessione, quindi ogni riga si paga a ogni richiesta. La documentazione consiglia di restare <strong>sotto le 200 righe per file</strong>. Si può generare una prima versione con <code>/init</code> e modificarla con <code>/memory</code>.</p>
+      <div class="tbl"><table>
+        <thead><tr><th>File</th><th>Ambito</th></tr></thead>
+        <tbody>
+          <tr><td><code>~/.claude/CLAUDE.md</code></td><td>Preferenze personali valide per tutti i progetti.</td></tr>
+          <tr><td><code>./CLAUDE.md</code> o <code>./.claude/CLAUDE.md</code></td><td>Regole del progetto, da versionare con il team.</td></tr>
+          <tr><td><code>./CLAUDE.local.md</code></td><td>Note personali sul progetto, da aggiungere a <code>.gitignore</code>.</td></tr>
+          <tr><td><code>.claude/rules/*.md</code></td><td>Regole tematiche, con <code>paths:</code> nel frontmatter per caricarle solo su certi file.</td></tr>
+          <tr><td><code>CLAUDE.md</code> nelle sottocartelle</td><td>Caricati solo quando l'agente lavora in quella cartella.</td></tr>
+        </tbody>
+      </table></div>
+      <p>Cosa metterci: comandi di build e test, convenzioni che il modello non può dedurre dal codice, errori ricorrenti da evitare. Cosa lasciare fuori: descrizioni lunghe dell'architettura, procedure usate di rado (meglio una skill) e tutto ciò che il modello ricava leggendo i file. Gli import con <code>@percorso/file.md</code> organizzano il testo ma non riducono il consumo: il file importato viene caricato comunque. I commenti HTML (<code>&lt;!-- --&gt;</code>) invece vengono rimossi prima dell'invio e non costano token.</p>
+      <div class="code"><div class="bar"><span>CLAUDE.md · esempio compatto</span><button type="button">Copia</button></div><pre># Progetto
+App Android in Kotlin + Jetpack Compose. Modulo principale: app/.
+
+## Comandi
+- Build: ./gradlew assembleDebug
+- Test unitari: ./gradlew testDebugUnitTest
+- Lint: ./gradlew lintDebug
+
+## Regole
+- Non modificare i file in app/src/main/res/values-*/ senza chiedere.
+- Ogni nuova schermata ha un test di UI in app/src/androidTest/.
+- Commit in italiano, all'imperativo, una riga di oggetto.
+
+## Compact instructions
+Quando compatti, conserva: file modificati, comandi di test e decisioni prese.</pre></div>
+
+      <h3>2. Modello e ragionamento in base al compito</h3>
+      <p>Il modello più potente non è sempre il più conveniente. La guida ufficiale ai costi suggerisce Sonnet per il lavoro ordinario e Opus per architettura e problemi difficili. L'alias <code>opusplan</code> usa Opus in plan mode e Sonnet in esecuzione, un buon compromesso per compiti strutturati.</p>
+      <ul class="list">
+        <li><code>/model</code> cambia modello e lo salva come predefinito; dentro il selettore il tasto <code>s</code> lo applica solo alla sessione corrente.</li>
+        <li><code>/effort</code> regola il ragionamento: <code>low</code>, <code>medium</code>, <code>high</code>, <code>xhigh</code>, <code>max</code>, <code>auto</code>. Per refactoring semplici, rinomine o documentazione <code>low</code> basta; alza il livello solo per bug complessi o progettazione. Per un singolo prompt difficile puoi scrivere <code>ultrathink</code> nel messaggio invece di alzare il livello per tutta la sessione.</li>
+        <li><code>/fast</code> rende le risposte molto più rapide ma con un costo per token più alto: utile quando conta la latenza, non per risparmiare.</li>
+      </ul>
+      <div class="callout"><span class="t">DECIDI PRIMA DI INIZIARE</span><p>Cambiare modello a metà sessione (anche il passaggio automatico di <code>opusplan</code>) o attivare e disattivare la modalità veloce invalida la cache dei prompt: la richiesta successiva paga di nuovo tutto il contesto a prezzo pieno.</p></div>
+
+      <h3>3. Tenere pulito il contesto</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Comando</th><th>Quando usarlo</th></tr></thead>
+        <tbody>
+          <tr><td><code>/clear</code></td><td>Tra un compito e l'altro. Non costa nulla ed è il risparmio più efficace. Alias <code>/new</code>.</td></tr>
+          <tr><td><code>/compact [istruzioni]</code></td><td>Quando vuoi proseguire lo stesso compito con meno storia. Es. <code>/compact conserva solo i file toccati e l'errore aperto</code>.</td></tr>
+          <tr><td><code>/context</code></td><td>Mostra cosa occupa il contesto (memoria, strumenti MCP, messaggi) con suggerimenti.</td></tr>
+          <tr><td><code>/usage</code></td><td>Consumo della sessione e uso della cache. Alias <code>/cost</code>.</td></tr>
+          <tr><td><code>/rewind</code> o Esc Esc</td><td>Torna a un punto precedente invece di accumulare correzioni su un tentativo sbagliato.</td></tr>
+          <tr><td>Plan mode (Shift+Tab)</td><td>Fa esplorare e proporre un piano senza modificare file: approvi la strada prima di spendere token in esecuzione.</td></tr>
+          <tr><td><code>/resume</code></td><td>Riprende una sessione precedente senza dover rispiegare il contesto.</td></tr>
+        </tbody>
+      </table></div>
+      <p>La compattazione automatica scatta da sola vicino al limite della finestra; la soglia si regola con <code>/autocompact</code> o con l'impostazione <code>autoCompactWindow</code>. Compattare prima, in un momento scelto da te, dà riassunti migliori.</p>
+
+      <h3>4. settings.json: escludere il superfluo e limitare l'output</h3>
+      <p>Le impostazioni si trovano in <code>~/.claude/settings.json</code> (personali), <code>.claude/settings.json</code> (progetto, condivise) e <code>.claude/settings.local.json</code> (progetto, solo tue). Le regole <code>deny</code> impediscono all'agente di leggere file inutili o riservati; il blocco <code>env</code> imposta i limiti di output.</p>
+      <div class="code"><div class="bar"><span>.claude/settings.json</span><button type="button">Copia</button></div><pre>{
+  <span class="key">"model"</span>: <span class="s">"sonnet"</span>,
+  <span class="key">"permissions"</span>: {
+    <span class="key">"allow"</span>: [
+      <span class="s">"Bash(npm run test *)"</span>,
+      <span class="s">"Bash(npm run lint *)"</span>,
+      <span class="s">"Bash(git diff *)"</span>
+    ],
+    <span class="key">"deny"</span>: [
+      <span class="s">"Read(./.env)"</span>,
+      <span class="s">"Read(./.env.*)"</span>,
+      <span class="s">"Read(./secrets/**)"</span>,
+      <span class="s">"Read(./node_modules/**)"</span>,
+      <span class="s">"Read(./dist/**)"</span>,
+      <span class="s">"Read(./build/**)"</span>,
+      <span class="s">"Read(./**/*.lock)"</span>
+    ]
+  },
+  <span class="key">"env"</span>: {
+    <span class="key">"BASH_MAX_OUTPUT_LENGTH"</span>: <span class="s">"20000"</span>,
+    <span class="key">"MAX_MCP_OUTPUT_TOKENS"</span>: <span class="s">"15000"</span>
+  }
+}</pre></div>
+      <ul class="list">
+        <li>Il file <code>.claudeignore</code> non ha effetto: per escludere file si usano le regole <code>deny</code> su <code>Read</code>.</li>
+        <li><code>BASH_MAX_OUTPUT_LENGTH</code> (predefinito 30.000 caratteri) tronca l'output dei comandi; <code>MAX_MCP_OUTPUT_TOKENS</code> (predefinito 25.000) fa lo stesso per gli strumenti MCP.</li>
+        <li>Le regole <code>allow</code> per i comandi sicuri evitano le richieste di conferma ripetute e le interruzioni.</li>
+        <li>Una <code>statusLine</code> che mostra la percentuale di contesto usata aiuta a capire quando è il momento di <code>/clear</code> o <code>/compact</code>.</li>
+      </ul>
+
+      <h3>5. MCP, subagent, skill e hook</h3>
+      <p><strong>Server MCP.</strong> Con la ricerca degli strumenti attiva (comportamento predefinito, <code>ENABLE_TOOL_SEARCH</code>) le definizioni vengono caricate solo quando servono. Resta comunque utile disattivare con <code>/mcp</code> i server che non usi in quel progetto e preferire strumenti a riga di comando già pronti, come <code>gh</code> per GitHub, che non aggiungono nulla al contesto.</p>
+      <p><strong>Subagent.</strong> Un subagent lavora in un contesto separato e restituisce solo il risultato: ideale per ricerche nel codice, analisi di log, esecuzione di test verbosi. Nel frontmatter puoi assegnargli un modello più economico e solo gli strumenti necessari.</p>
+      <div class="code"><div class="bar"><span>.claude/agents/test-runner.md</span><button type="button">Copia</button></div><pre>---
+name: test-runner
+description: Esegue i test e riporta solo i fallimenti con file, riga e messaggio. Usalo dopo ogni modifica al codice.
+tools: Bash, Read, Grep
+model: haiku
+---
+Esegui la suite di test del progetto. Non riportare i test passati.
+Per ogni test fallito indica: nome, file:riga, messaggio d'errore in una riga
+e l'ipotesi più probabile sulla causa. Massimo 30 righe in totale.</pre></div>
+      <p><strong>Skill.</strong> Una skill (<code>.claude/skills/&lt;nome&gt;/SKILL.md</code>) è un'istruzione riusabile di cui all'avvio viene caricata solo la descrizione; il corpo entra nel contesto solo quando serve. Sposta qui le procedure lunghe che oggi tieni nel <code>CLAUDE.md</code> (rilascio, migrazioni, checklist di revisione) e tieni ogni <code>SKILL.md</code> sotto le 500 righe.</p>
+      <p><strong>Hook.</strong> Gli hook eseguono comandi in risposta a eventi. Un hook <code>PostToolUse</code> che lancia formatter e linter dopo ogni modifica evita giri di correzione; uno che filtra l'output dei test (per esempio con <code>tail -n 100</code>) evita che migliaia di righe finiscano nel contesto.</p>
+
+      <h3>6. Modalità non interattiva per le automazioni</h3>
+      <p>Per script e CI usa <code>claude -p</code> con limiti espliciti. <code>--bare</code> salta CLAUDE.md, hook, MCP e skill ed è consigliato per gli script: carichi solo quello che passi tu.</p>
+      <div class="code"><div class="bar"><span>terminale</span><button type="button">Copia</button></div><pre>claude -p "Riassumi le modifiche dell'ultimo commit in 5 punti" \
+  --bare --model haiku --max-turns 3 \
+  --allowedTools "Bash(git diff *),Bash(git log *),Read" \
+  --output-format json</pre></div>
+      <p class="soft">Con <code>--output-format json</code> la risposta include il costo della chiamata, utile per tenere sotto controllo le automazioni. <code>--max-budget-usd</code> fissa un tetto di spesa.</p>
+    </section>
+
+    <section id="codex" data-toc="Codex: configurazione">
+      <p class="label">Parte 2 · OpenAI Codex</p>
+      <h2>Codex: configurazione per lavorare meglio e spendere meno</h2>
+      <p>Codex è l'agente di OpenAI disponibile come CLI, estensione per IDE, app desktop e servizio cloud collegato a ChatGPT. Le leve sono le stesse di Claude Code, con nomi diversi: <code>AGENTS.md</code> al posto di <code>CLAUDE.md</code>, un file <code>config.toml</code> al posto di <code>settings.json</code>.</p>
+
+      <div class="callout warn"><span class="t">ATTENZIONE ALLE GUIDE VECCHIE</span>
+        <p>Codex cambia in fretta. Molte guide in circolazione usano sintassi non più valide: le tabelle <code>[profiles.nome]</code> dentro <code>config.toml</code> non vengono più lette da <code>--profile</code>, il flag <code>--full-auto</code> non compare più nel riferimento ufficiale e <code>approval_policy = "untrusted"</code> non è più supportato. Quanto segue segue la documentazione attuale.</p>
+      </div>
+
+      <h3>1. AGENTS.md: istruzioni brevi e vicine al codice</h3>
+      <p>Codex legge un <code>AGENTS.md</code> globale in <code>~/.codex/</code> e poi, nel progetto, un file per ogni cartella dalla radice del repository fino alla cartella di lavoro. I file vengono concatenati e quelli più vicini alla cartella corrente prevalgono. In ogni cartella <code>AGENTS.override.md</code>, se presente, sostituisce <code>AGENTS.md</code>.</p>
+      <p>La lettura si interrompe a <code>project_doc_max_bytes</code>, che vale 32 KiB: oltre quella soglia le istruzioni vengono tagliate. La guida ufficiale consiglia un file breve e accurato, con comandi di build e test, convenzioni e criteri di "lavoro finito". <code>/init</code> ne genera una prima versione.</p>
+      <div class="callout"><span class="t">SE USI ENTRAMBI GLI AGENTI</span><p>Tieni le regole comuni in un solo <code>AGENTS.md</code>. Claude Code legge <code>AGENTS.md</code> quando manca un <code>CLAUDE.md</code>; se ti serve anche un <code>CLAUDE.md</code>, fallo di una riga con <code>@AGENTS.md</code> più le sole note specifiche di Claude. Una sola fonte di verità, nessun doppio aggiornamento.</p></div>
+
+      <h3>2. config.toml: ragionamento, verbosità e limiti di output</h3>
+      <p>La configurazione personale è in <code>~/.codex/config.toml</code>. Un progetto può avere il suo <code>.codex/config.toml</code>, che viene caricato solo se hai segnato il progetto come attendibile. I flag da riga di comando e le opzioni <code>-c chiave=valore</code> hanno sempre la precedenza.</p>
+      <div class="code"><div class="bar"><span>~/.codex/config.toml</span><button type="button">Copia</button></div><pre><span class="c"># Ragionamento: medium come base, alzalo solo per i compiti difficili</span>
+<span class="key">model_reasoning_effort</span> = <span class="s">"medium"</span>
+<span class="key">plan_mode_reasoning_effort</span> = <span class="s">"high"</span>
+
+<span class="c"># Meno testo superfluo in uscita</span>
+<span class="key">model_verbosity</span> = <span class="s">"low"</span>
+<span class="key">model_reasoning_summary</span> = <span class="s">"none"</span>
+<span class="key">hide_agent_reasoning</span> = true
+
+<span class="c"># Tronca l'output dei comandi prima che entri nel contesto</span>
+<span class="key">tool_output_token_limit</span> = 10000
+
+<span class="c"># Permessi: scrive solo nel progetto, chiede prima di uscire dal perimetro</span>
+<span class="key">approval_policy</span> = <span class="s">"on-request"</span>
+<span class="key">sandbox_mode</span> = <span class="s">"workspace-write"</span>
+
+<span class="c"># Ricerca web dall'indice in cache (predefinito); "live" solo quando serve</span>
+<span class="key">web_search</span> = <span class="s">"cached"</span>
+
+[sandbox_workspace_write]
+<span class="key">network_access</span> = false</pre></div>
+      <ul class="list">
+        <li><code>model_reasoning_effort</code> accetta <code>low</code>, <code>medium</code>, <code>high</code>, <code>xhigh</code> e, su alcuni modelli, livelli superiori. La documentazione è esplicita: più ragionamento significa più tempo e più token, e i livelli massimi non servono alla maggior parte dei compiti.</li>
+        <li><code>model_verbosity</code> (<code>low</code>, <code>medium</code>, <code>high</code>) controlla la lunghezza delle risposte; <code>low</code> va bene per chi legge soprattutto il diff.</li>
+        <li><code>tool_output_token_limit</code> limita quanto output di un comando entra nel contesto. La guida di OpenAI sul prompting per Codex indica circa 10.000 token come soglia ragionevole.</li>
+        <li>Per la scelta del modello consulta la <a href="https://learn.chatgpt.com/docs/models" rel="noopener">pagina modelli</a>: OpenAI distingue il modello più capace, uno bilanciato consigliato per lavori lunghi e ripetuti e uno più efficiente per compiti mirati e ad alto volume. Usa il più capace solo dove serve davvero.</li>
+      </ul>
+
+      <h3>3. Profili: una configurazione per ogni tipo di lavoro</h3>
+      <p>Ogni profilo ora è un file a sé, <code>~/.codex/&lt;nome&gt;.config.toml</code>, con le chiavi al primo livello. Si attiva con <code>--profile</code> o <code>-p</code>.</p>
+      <div class="grid">
+        <div class="code" style="margin:0"><div class="bar"><span>~/.codex/veloce.config.toml</span><button type="button">Copia</button></div><pre><span class="c"># Rinomine, documentazione, piccoli fix</span>
+<span class="key">model_reasoning_effort</span> = <span class="s">"low"</span>
+<span class="key">model_verbosity</span> = <span class="s">"low"</span></pre></div>
+        <div class="code" style="margin:0"><div class="bar"><span>~/.codex/profondo.config.toml</span><button type="button">Copia</button></div><pre><span class="c"># Bug complessi, progettazione</span>
+<span class="key">model_reasoning_effort</span> = <span class="s">"high"</span>
+<span class="key">model_verbosity</span> = <span class="s">"medium"</span></pre></div>
+      </div>
+      <div class="code"><div class="bar"><span>terminale</span><button type="button">Copia</button></div><pre>codex -p veloce
+codex -p profondo</pre></div>
+
+      <h3>4. Comandi per gestire il contesto</h3>
+      <div class="tbl"><table>
+        <thead><tr><th>Comando</th><th>A cosa serve</th></tr></thead>
+        <tbody>
+          <tr><td><code>/new</code></td><td>Nuova conversazione per un nuovo compito. La guida ufficiale sconsiglia una sola chat per tutto il progetto.</td></tr>
+          <tr><td><code>/compact</code></td><td>Riassume la conversazione per liberare contesto senza perdere il filo.</td></tr>
+          <tr><td><code>/status</code></td><td>Mostra configurazione attiva e token usati nella sessione.</td></tr>
+          <tr><td><code>/model</code></td><td>Cambia modello e livello di ragionamento.</td></tr>
+          <tr><td><code>/plan</code></td><td>Fa proporre un piano prima di toccare i file.</td></tr>
+          <tr><td><code>/permissions</code></td><td>Regola approvazioni e sandbox (sostituisce il vecchio <code>/approvals</code>).</td></tr>
+          <tr><td><code>/diff</code> e <code>/review</code></td><td>Rivedere le modifiche prima di accettarle.</td></tr>
+          <tr><td><code>/resume</code> o <code>codex resume --last</code></td><td>Riprende una sessione senza rispiegare tutto.</td></tr>
+        </tbody>
+      </table></div>
+      <p>La compattazione automatica si può anticipare con <code>model_auto_compact_token_limit</code>. Nei prompt, menziona i file con <code>@percorso</code>: Codex parte da lì invece di esplorare tutto il repository.</p>
+
+      <h3>5. MCP e skill: carica solo ciò che serve</h3>
+      <p>Ogni server MCP aggiunge strumenti e descrizioni. In <code>config.toml</code> puoi tenerlo spento finché non serve oppure esporre solo alcuni strumenti.</p>
+      <div class="code"><div class="bar"><span>~/.codex/config.toml · server MCP</span><button type="button">Copia</button></div><pre>[mcp_servers.playwright]
+<span class="key">command</span> = <span class="s">"npx"</span>
+<span class="key">args</span> = [<span class="s">"@playwright/mcp@latest"</span>]
+<span class="key">enabled</span> = false                      <span class="c"># accendilo solo nei progetti web</span>
+<span class="key">enabled_tools</span> = [<span class="s">"browser_navigate"</span>, <span class="s">"browser_snapshot"</span>]
+<span class="key">tool_timeout_sec</span> = 60</pre></div>
+      <p>I server si gestiscono anche da terminale con <code>codex mcp list</code>, <code>codex mcp add</code> e <code>codex mcp remove</code>.</p>
+      <p>Le <strong>skill</strong> funzionano come in Claude Code: cartelle con un <code>SKILL.md</code> (frontmatter con <code>name</code> e <code>description</code>) in <code>.agents/skills/</code> nel repository o in <code>~/.agents/skills/</code> per l'utente. All'avvio Codex carica solo nome e descrizione; il resto entra nel contesto quando la skill viene richiamata con <code>$nome</code> o da <code>/skills</code>. Sostituiscono i vecchi prompt personalizzati in <code>~/.codex/prompts</code>, ormai deprecati.</p>
+      <p><strong>Subagent.</strong> Se non li configuri ereditano modello e ragionamento della sessione principale: assegna in modo esplicito un modello e un livello più leggeri a quelli che fanno lavori semplici.</p>
+
+      <h3>6. Automazioni con codex exec</h3>
+      <div class="code"><div class="bar"><span>terminale</span><button type="button">Copia</button></div><pre>codex exec --ephemeral -p veloce -s read-only \
+  -o riepilogo.md "Riassumi in 5 punti le modifiche non ancora committate"</pre></div>
+      <p class="soft"><code>--ephemeral</code> non salva la sessione, <code>-s read-only</code> impedisce modifiche, <code>-o</code> scrive solo l'ultimo messaggio su file. Con <code>--json</code> ottieni gli eventi in formato strutturato e con <code>--output-schema</code> puoi imporre la forma della risposta.</p>
+    </section>
+
+    <section id="confronto" data-toc="Claude Code e Codex a confronto">
+      <p class="label">Parte 2 · Riepilogo</p>
+      <h2>Claude Code e Codex a confronto</h2>
+      <div class="tbl"><table>
+        <thead><tr><th>Obiettivo</th><th>Claude Code</th><th>Codex</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Istruzioni di progetto</strong></td><td><code>CLAUDE.md</code>, sotto 200 righe</td><td><code>AGENTS.md</code>, limite 32 KiB</td></tr>
+          <tr><td><strong>Configurazione</strong></td><td><code>.claude/settings.json</code></td><td><code>~/.codex/config.toml</code>, <code>.codex/config.toml</code></td></tr>
+          <tr><td><strong>Livello di ragionamento</strong></td><td><code>/effort</code></td><td><code>model_reasoning_effort</code>, <code>/model</code></td></tr>
+          <tr><td><strong>Nuovo compito</strong></td><td><code>/clear</code></td><td><code>/new</code></td></tr>
+          <tr><td><strong>Ridurre la storia</strong></td><td><code>/compact [istruzioni]</code></td><td><code>/compact</code></td></tr>
+          <tr><td><strong>Vedere il consumo</strong></td><td><code>/context</code>, <code>/usage</code></td><td><code>/status</code></td></tr>
+          <tr><td><strong>Pianificare prima</strong></td><td>Plan mode (Shift+Tab)</td><td><code>/plan</code></td></tr>
+          <tr><td><strong>Limitare l'output dei comandi</strong></td><td><code>BASH_MAX_OUTPUT_LENGTH</code></td><td><code>tool_output_token_limit</code></td></tr>
+          <tr><td><strong>Escludere file</strong></td><td><code>permissions.deny</code> con <code>Read(...)</code></td><td>Sandbox e istruzioni in <code>AGENTS.md</code></td></tr>
+          <tr><td><strong>Procedure riusabili</strong></td><td><code>.claude/skills/</code></td><td><code>.agents/skills/</code></td></tr>
+          <tr><td><strong>Configurazioni alternative</strong></td><td><code>--settings</code>, alias di modello</td><td>Profili <code>-p nome</code></td></tr>
+          <tr><td><strong>Uso negli script</strong></td><td><code>claude -p --bare --max-turns</code></td><td><code>codex exec --ephemeral</code></td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="checklist" data-toc="Checklist finale">
+      <p class="label">Da tenere a portata di mano</p>
+      <h2>Checklist finale</h2>
+      <ul class="check">
+        <li>Un compito per sessione: <code>/clear</code> o <code>/new</code> appena cambi argomento.</li>
+        <li>File di istruzioni brevi, con comandi di build e test e regole non ovvie; le procedure lunghe vanno nelle skill.</li>
+        <li>Ragionamento medio come base, alto solo per i problemi difficili, basso per i lavori meccanici.</li>
+        <li>Modello e configurazione scelti all'inizio, non cambiati a metà sessione.</li>
+        <li>Piano approvato prima dell'esecuzione per ogni compito non banale.</li>
+        <li>File e cartelle pesanti o riservati esclusi dalla lettura, output dei comandi limitato.</li>
+        <li>Server MCP attivi solo dove servono; meglio una CLI già installata quando c'è.</li>
+        <li>Attività verbose (test, ricerche, log) delegate a subagent con un modello leggero.</li>
+        <li>Consumo controllato con <code>/context</code>, <code>/usage</code> o <code>/status</code> e compattazione fatta da te prima che scatti quella automatica.</li>
+        <li>Ogni risultato verificato in proporzione al rischio, senza segreti nei prompt.</li>
+      </ul>
+    </section>
+
+    <section id="fonti" data-toc="Fonti">
+      <p class="label">Per approfondire</p>
+      <h2>Fonti ufficiali</h2>
+      <p class="soft">Opzioni e comandi sono stati verificati su queste pagine a novembre 2026.</p>
+      <div class="grid">
+        <div class="card"><span class="k">CLAUDE CODE</span>
+          <p><a href="https://code.claude.com/docs/en/costs" rel="noopener">Gestire i costi</a><br>
+          <a href="https://code.claude.com/docs/en/best-practices" rel="noopener">Best practice</a><br>
+          <a href="https://code.claude.com/docs/en/memory" rel="noopener">Memoria e CLAUDE.md</a><br>
+          <a href="https://code.claude.com/docs/en/settings" rel="noopener">Impostazioni</a><br>
+          <a href="https://code.claude.com/docs/en/sub-agents" rel="noopener">Subagent</a> · <a href="https://code.claude.com/docs/en/skills" rel="noopener">Skill</a> · <a href="https://code.claude.com/docs/en/hooks" rel="noopener">Hook</a></p></div>
+        <div class="card"><span class="k">CODEX</span>
+          <p><a href="https://learn.chatgpt.com/docs/learn/best-practices" rel="noopener">Best practice</a><br>
+          <a href="https://learn.chatgpt.com/docs/config-file/config-reference" rel="noopener">Riferimento config.toml</a><br>
+          <a href="https://learn.chatgpt.com/docs/agent-configuration/agents-md" rel="noopener">AGENTS.md</a><br>
+          <a href="https://learn.chatgpt.com/docs/build-skills" rel="noopener">Skill</a><br>
+          <a href="https://learn.chatgpt.com/docs/models" rel="noopener">Modelli</a></p></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer class="foot">
+  Guida a cura di <a href="../">SCENARIO ZERO</a>, pagina scritta e gestita da un'intelligenza artificiale e rivista da una persona.
+  Nomi di comandi e opzioni verificati sulla documentazione ufficiale a novembre 2026: gli strumenti cambiano spesso, quindi controlla sempre le fonti linkate prima di applicare una configurazione.
+</footer>
+
+<script>
+  // Indice generato dalle sezioni
+  const secs = [...document.querySelectorAll('main section[id]')];
+  const mk = (ol) => secs.forEach(s => {
+    const li = document.createElement('li'); const a = document.createElement('a');
+    a.href = '#' + s.id; a.textContent = s.dataset.toc || s.querySelector('h2').textContent; li.appendChild(a); ol.appendChild(li);
+  });
+  mk(document.getElementById('toc-list')); mk(document.getElementById('mtoc-list'));
+  document.querySelectorAll('#mtoc-list a').forEach(a => a.addEventListener('click', () => a.closest('details').open = false));
+  const links = [...document.querySelectorAll('#toc-list a')];
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + e.target.id));
+  }), { rootMargin: '-20% 0px -70% 0px' });
+  secs.forEach(s => io.observe(s));
+  // Pulsanti copia
+  document.querySelectorAll('.code').forEach(box => {
+    const btn = box.querySelector('button'); if (!btn) return;
+    btn.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(box.querySelector('pre').innerText); btn.textContent = 'Copiato'; }
+      catch { btn.textContent = 'Seleziona e copia'; }
+      setTimeout(() => btn.textContent = 'Copia', 1600);
+    });
+  });
+</script>
+</body>
+</html>
